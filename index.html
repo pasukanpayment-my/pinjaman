@@ -16,8 +16,8 @@
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(function(OneSignal) {
       OneSignal.init({
-        appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", // App ID OneSignal Anda
-        notifyButton: { enable: false }, // Disembunyikan karena kita pakai pop-up otomatis
+        appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
+        notifyButton: { enable: false },
       });
     });
   </script>
@@ -26,35 +26,29 @@
 
   <h2>Semakan Status Akaun</h2>
   
-  <!-- Tempat menampilkan hasil atau pesan error -->
   <div id="hasilPaparan"><p style="color:red;">Akses ditolak. Sila gunakan pautan (link) rasmi yang mengandungi No Akaun untuk menyemak status anda.</p></div>
 
   <script>
     const urlAPI = "https://script.google.com/macros/s/AKfycbw5V9MtDo_ejLyJpjVjBu4UNQTXR-bqreIt1Em4n6SEVG4X2WOnNBy7afcQFGPSeek4/exec";
 
-    // 1. Mengesan link automatik semasa laman dibuka
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       const idDariLink = urlParams.get('id'); 
       
       if (idDariLink) {
         prosesSemakan(idDariLink);
-        
-        // 2. Memicu pop-up Notifikasi Push secara automatik (delay 2 saat)
-        setTimeout(() => {
-          window.OneSignalDeferred.push(function(OneSignal) {
-            OneSignal.Slidedown.promptPush();
-          });
-        }, 2000);
+        // Permintaan automatik dibuang dari sini untuk mengelakkan halangan browser
       }
     };
 
-    // 3. Fungsi memicu pop-up notifikasi saat tombol gambar ditekan
+    // Fungsi yang hanya berjalan apabila butang ditekan
     function bukaGambar(url) {
+      // 1. Panggil pop-up konfirmasi OneSignal (Tidak akan diblokir kerana ada interaksi klik)
       window.OneSignalDeferred.push(function(OneSignal) {
         OneSignal.Slidedown.promptPush();
       });
-      // Buka gambar di tab baru
+      
+      // 2. Buka gambar di tab baru
       window.open(url, '_blank');
     }
 
@@ -68,7 +62,6 @@
           if (res.status === 'success') {
             const data = res.data;
             
-            // Format HTML tanpa Email dan tanpa tombol Cari Akaun Lain
             let paparanHTML = `
               <div class="card">
                 <h3>Butiran Peminjam</h3>
@@ -79,7 +72,6 @@
             `;
 
             if (data.gambar) {
-              // Menambahkan fungsi on-click pada tombol gambar
               paparanHTML += `
                 <p><strong>Dokumen / Bukti:</strong></p>
                 <button onclick="bukaGambar('${data.gambar}')" class="btn-link">Buka Gambar Penuh</button>
