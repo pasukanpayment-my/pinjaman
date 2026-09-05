@@ -11,7 +11,6 @@
     img.bukti { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; border: 1px solid #eee; margin-bottom: 15px;}
   </style>
 
-  <!-- Script OneSignal -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -41,22 +40,17 @@
       }
     };
 
-    // Fungsi mengekstrak ID fail Google Drive dari link asal
     function dapatkanDriveId(urlAsli) {
       let match = urlAsli.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlAsli.match(/id=([a-zA-Z0-9_-]+)/);
       return match ? match[1] : null;
     }
 
-    // Fungsi klik butang bersepadu (Buka gambar + Minta Notifikasi)
     function aksiBukaGambar(urlAsli) {
       let fileId = dapatkanDriveId(urlAsli);
       let urlDirectBuka = fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : urlAsli;
 
-      // 1. Buka gambar di tab baru SERTA MERTA (mengelakkan dihalang oleh browser pop-up blocker)
       window.open(urlDirectBuka, '_blank');
 
-      // 2. Meminta persetujuan notifikasi di tab asal. 
-      // Apabila pengguna kembali dari melihat gambar, mesej 'Allow' sudah tersedia di skrin.
       window.OneSignalDeferred.push(function(OneSignal) {
         OneSignal.Notifications.requestPermission();
       });
@@ -71,19 +65,27 @@
         .then(res => {
           if (res.status === 'success') {
             const data = res.data;
+
+            window.OneSignalDeferred.push(function(OneSignal) {
+              OneSignal.login(data.noAkun.toString());
+              OneSignal.User.addTags({
+                nama_peminjam: data.nama,
+                nama_aplikasi: data.aplikasi
+              });
+            });
             
             let paparanHTML = `
               <div class="card">
                 <h3>Butiran Peminjam</h3>
                 <p><strong>No Akaun:</strong> ${data.noAkun}</p>
                 <p><strong>Nama Peminjam:</strong> ${data.nama}</p>
+                <p><strong>Aplikasi:</strong> ${data.aplikasi}</p>
                 <p><strong>Jumlah Pinjaman Asli:</strong> RM ${data.asli}</p>
                 <p><strong>Jumlah Settle Diskaun:</strong> RM ${data.diskaun}</p>
             `;
 
             if (data.gambar) {
               let fileId = dapatkanDriveId(data.gambar);
-              // Menggunakan endpoint khas Google Drive untuk memaparkan imej kecil tanpa ralat keselamatan
               let urlGambarInline = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : "";
 
               paparanHTML += `
