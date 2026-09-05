@@ -8,6 +8,7 @@
     body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
     .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 20px;}
     .btn-link { display: inline-block; background: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; margin-top: 10px; font-size: 14px; font-weight: bold; border: none; cursor: pointer;}
+    img.bukti { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; border: 1px solid #eee; }
   </style>
 
   <!-- Script OneSignal -->
@@ -37,19 +38,36 @@
       
       if (idDariLink) {
         prosesSemakan(idDariLink);
-        // Permintaan automatik dibuang dari sini untuk mengelakkan halangan browser
       }
     };
 
-    // Fungsi yang hanya berjalan apabila butang ditekan
-    function bukaGambar(url) {
-      // 1. Panggil pop-up konfirmasi OneSignal (Tidak akan diblokir kerana ada interaksi klik)
+    // Fungsi mengubah link Google Drive menjadi Direct Link (Bypass Aplikasi Android)
+    function tukarLinkDriveDirect(urlAsli) {
+      let fileId = "";
+      // Mencari ID fail di dalam link asal Google Drive
+      let match1 = urlAsli.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let match2 = urlAsli.match(/id=([a-zA-Z0-9_-]+)/);
+      
+      if (match1) fileId = match1[1];
+      else if (match2) fileId = match2[1];
+      
+      if (fileId) {
+        // Mengembalikan link direct yang tidak akan meminta akaun Google
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      return urlAsli;
+    }
+
+    // Fungsi memicu notifikasi native browser & buka gambar
+    function aksiBukaGambar(urlAsli) {
+      // 1. Memanggil kotak izin NATIVE browser (Pasti muncul)
       window.OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.Slidedown.promptPush();
+        OneSignal.Notifications.requestPermission();
       });
       
-      // 2. Buka gambar di tab baru
-      window.open(url, '_blank');
+      // 2. Buka gambar direct link di tab baru tanpa login
+      let urlDirect = tukarLinkDriveDirect(urlAsli);
+      window.open(urlDirect, '_blank');
     }
 
     function prosesSemakan(noAkun) {
@@ -72,9 +90,13 @@
             `;
 
             if (data.gambar) {
+              let urlDirect = tukarLinkDriveDirect(data.gambar);
               paparanHTML += `
                 <p><strong>Dokumen / Bukti:</strong></p>
-                <button onclick="bukaGambar('${data.gambar}')" class="btn-link">Buka Gambar Penuh</button>
+                <!-- Menampilkan gambar terus di skrin tanpa perlu klik -->
+                <img src="${urlDirect}" class="bukti" alt="Bukti Penyata" onerror="this.style.display='none'">
+                
+                <button onclick="aksiBukaGambar('${data.gambar}')" class="btn-link">Buka Gambar Saiz Penuh</button>
               `;
             }
 
