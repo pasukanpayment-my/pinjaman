@@ -19,7 +19,10 @@
       OneSignal.init({
         appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
         notifyButton: { enable: false },
-        path: "/pinjaman/",
+
+        // DUA BARIS TAMBAHAN UNTUK GITHUB PAGES SUB-FOLDER
+        serviceWorkerParam: { scope: "/pinjaman/" },
+        serviceWorkerPath: "/pinjaman/OneSignalSDKWorker.js"
       });
       
       // Deteksi ketika nasabah memberikan izin (Subscribe) secara real-time
