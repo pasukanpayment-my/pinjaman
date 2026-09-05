@@ -8,9 +8,10 @@
     body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
     .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 20px;}
     .btn-link { display: inline-block; background: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; margin-top: 10px; font-size: 14px; font-weight: bold; border: none; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center;}
-    img.bukti { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; border: 1px solid #eee; margin-bottom: 15px;}
+    .lock-overlay { text-align: center; background: #f8f9fa; padding: 20px; border: 1px dashed #ccc; border-radius: 4px; margin-top: 15px; }
   </style>
 
+  <!-- Script OneSignal -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -19,7 +20,18 @@
         appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
         notifyButton: { enable: false },
       });
+      
+      // Deteksi ketika nasabah memberikan izin (Subscribe) secara real-time
+      OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          if (event.current.optedIn) {
+              // Jika izin diberikan (Allow ditekan), otomatis buka kunci
+              bukaKunciGambar();
+          }
+      });
     });
+    
+    // Variabel global untuk menyimpan link gambar langsung (terselubung)
+    window.urlGambarRahsia = ""; 
   </script>
 </head>
 <body>
@@ -44,16 +56,25 @@
       let match = urlAsli.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlAsli.match(/id=([a-zA-Z0-9_-]+)/);
       return match ? match[1] : null;
     }
+    
+    // 1. Fungsi memicu pop-up izin
+    function mintaIzinNotifikasi() {
+        window.OneSignalDeferred.push(function(OneSignal) {
+            OneSignal.Notifications.requestPermission();
+        });
+    }
 
-    function aksiBukaGambar(urlAsli) {
-      let fileId = dapatkanDriveId(urlAsli);
-      let urlDirectBuka = fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : urlAsli;
-
-      window.open(urlDirectBuka, '_blank');
-
-      window.OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.Notifications.requestPermission();
-      });
+    // 2. Fungsi merubah tombol kunci menjadi tombol gambar yang bisa ditekan
+    function bukaKunciGambar() {
+        if(window.urlGambarRahsia) {
+            let kawasanGambar = document.getElementById('kawasanGambarTerkunci');
+            if(kawasanGambar) {
+               kawasanGambar.innerHTML = `
+                 <p style="color:green; font-weight:bold;">Akses Dibenarkan ✔</p>
+                 <button onclick="window.open('${window.urlGambarRahsia}', '_blank')" class="btn-link" style="background:#007bff;">Lihat Gambar Penuh</button>
+               `;
+            }
+        }
     }
 
     function prosesSemakan(noAkun) {
@@ -86,18 +107,32 @@
 
             if (data.gambar) {
               let fileId = dapatkanDriveId(data.gambar);
-              let urlGambarInline = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : "";
+              let urlDirectBuka = fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : data.gambar;
+              
+              // Menyimpan link gambar di background, menunggu izin
+              window.urlGambarRahsia = urlDirectBuka;
 
+              // Tampilan Kunci Awal
               paparanHTML += `
-                <p><strong>Dokumen / Bukti:</strong></p>
-                <img src="${urlGambarInline}" class="bukti" alt="Bukti Penyata" onerror="this.style.display='none'">
-                
-                <button onclick="aksiBukaGambar('${data.gambar}')" class="btn-link">Buka Gambar Saiz Penuh</button>
+                <div id="kawasanGambarTerkunci" class="lock-overlay">
+                    <p>🔒 <strong>Gambar disulitkan</strong></p>
+                    <p style="font-size: 13px; color: #555;">Sila izinkan (Allow) notifikasi keselamatan untuk melihat lampiran bukti ini.</p>
+                    <button onclick="mintaIzinNotifikasi()" class="btn-link">Sahkan & Buka Gambar</button>
+                </div>
               `;
             }
 
             paparanHTML += `</div>`;
             tempatHasil.innerHTML = paparanHTML;
+            
+            // 3. Pengecekan status saat halaman baru selesai dimuat
+            // Jika nasabah sudah pernah "Allow" di masa lalu, sistem mem-bypass penguncian
+            window.OneSignalDeferred.push(function(OneSignal) {
+                if (OneSignal.User.PushSubscription.optedIn) {
+                    bukaKunciGambar();
+                }
+            });
+
           } else {
             tempatHasil.innerHTML = `<p style='color:red;'>Ralat: ${res.message}</p>`;
           }
