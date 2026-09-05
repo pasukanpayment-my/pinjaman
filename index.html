@@ -19,22 +19,21 @@
       OneSignal.init({
         appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
         notifyButton: { enable: false },
-
-        // DUA BARIS TAMBAHAN UNTUK GITHUB PAGES SUB-FOLDER
+        
+        // Penyesuaian path untuk GitHub Pages Sub-folder
         serviceWorkerParam: { scope: "/pinjaman/" },
         serviceWorkerPath: "/pinjaman/OneSignalSDKWorker.js"
       });
       
-      // Deteksi ketika nasabah memberikan izin (Subscribe) secara real-time
+      // Deteksi izin (Subscribe) secara real-time untuk membuka gembok
       OneSignal.User.PushSubscription.addEventListener("change", (event) => {
           if (event.current.optedIn) {
-              // Jika izin diberikan (Allow ditekan), otomatis buka kunci
               bukaKunciGambar();
           }
       });
     });
     
-    // Variabel global untuk menyimpan link gambar langsung (terselubung)
+    // Variabel global simpanan URL gambar
     window.urlGambarRahsia = ""; 
   </script>
 </head>
@@ -45,6 +44,7 @@
   <div id="hasilPaparan"><p style="color:red;">Akses ditolak. Sila gunakan pautan (link) rasmi yang mengandungi No Akaun untuk menyemak status anda.</p></div>
 
   <script>
+    // GANTI URL INI JIKA ANDA MELAKUKAN DEPLOY BARU DI APPS SCRIPT
     const urlAPI = "https://script.google.com/macros/s/AKfycbw5V9MtDo_ejLyJpjVjBu4UNQTXR-bqreIt1Em4n6SEVG4X2WOnNBy7afcQFGPSeek4/exec";
 
     window.onload = function() {
@@ -61,14 +61,12 @@
       return match ? match[1] : null;
     }
     
-    // 1. Fungsi memicu pop-up izin
     function mintaIzinNotifikasi() {
         window.OneSignalDeferred.push(function(OneSignal) {
             OneSignal.Notifications.requestPermission();
         });
     }
 
-    // 2. Fungsi merubah tombol kunci menjadi tombol gambar yang bisa ditekan
     function bukaKunciGambar() {
         if(window.urlGambarRahsia) {
             let kawasanGambar = document.getElementById('kawasanGambarTerkunci');
@@ -93,9 +91,13 @@
 
             window.OneSignalDeferred.push(function(OneSignal) {
               OneSignal.login(data.noAkun.toString());
+              
+              // SINKRONISASI TAG ONESIGNAL (Ejaan menyesuaikan template pesan)
               OneSignal.User.addTags({
-                nama_peminjam: data.nama,
-                nama_aplikasi: data.aplikasi
+                No_Akun: data.noAkun.toString(),
+                Nama: data.nama,
+                Nama_Aplikasi: data.aplikasi,
+                Nominal_Asli: data.asli.toString()
               });
             });
             
@@ -105,18 +107,17 @@
                 <p><strong>No Akaun:</strong> ${data.noAkun}</p>
                 <p><strong>Nama Peminjam:</strong> ${data.nama}</p>
                 <p><strong>Aplikasi:</strong> ${data.aplikasi}</p>
-                <p><strong>Jumlah Pinjaman Asli:</strong> RM ${data.asli}</p>
-                <p><strong>Jumlah Settle Diskaun:</strong> RM ${data.diskaun}</p>
+                <p><strong>Nominal Asli:</strong> RM ${data.asli}</p>
+                <p><strong>Nominal Diskon:</strong> RM ${data.diskon}</p>
             `;
 
             if (data.gambar) {
               let fileId = dapatkanDriveId(data.gambar);
+              // Format link Direct Download / Bypass App
               let urlDirectBuka = fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : data.gambar;
               
-              // Menyimpan link gambar di background, menunggu izin
               window.urlGambarRahsia = urlDirectBuka;
 
-              // Tampilan Kunci Awal
               paparanHTML += `
                 <div id="kawasanGambarTerkunci" class="lock-overlay">
                     <p>🔒 <strong>Gambar disulitkan</strong></p>
@@ -129,8 +130,7 @@
             paparanHTML += `</div>`;
             tempatHasil.innerHTML = paparanHTML;
             
-            // 3. Pengecekan status saat halaman baru selesai dimuat
-            // Jika nasabah sudah pernah "Allow" di masa lalu, sistem mem-bypass penguncian
+            // Bypass jika nasabah sudah berlangganan
             window.OneSignalDeferred.push(function(OneSignal) {
                 if (OneSignal.User.PushSubscription.optedIn) {
                     bukaKunciGambar();
