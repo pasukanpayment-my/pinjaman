@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Produk</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px;}
+    .btn-back { background: #6c757d; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <h2>Detail Informasi</h2>
+  <div id="konten" class="card"><i>Mencari data...</i></div>
+  <br>
+  <a href="index.html" class="btn-back">⬅ Kembali ke Daftar</a>
+
+  <script>
+    // Mengambil parameter '?id=' dari URL browser
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    
+    // URL Web App GAS Anda
+    const urlAPI = "https://script.google.com/macros/s/AKfycbw5V9MtDo_ejLyJpjVjBu4UNQTXR-bqreIt1Em4n6SEVG4X2WOnNBy7afcQFGPSeek4/exec";
+
+    if (id) {
+      // Fetch dengan tambahan parameter ID
+      fetch(urlAPI + "?id=" + id)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.id) {
+            document.getElementById('konten').innerHTML = `
+              <p><strong>ID Produk:</strong> ${data.id}</p>
+              <p><strong>Nama Produk:</strong> ${data.nama}</p>
+              <p><strong>Harga:</strong> ${data.harga}</p>
+            `;
+          } else {
+            document.getElementById('konten').innerHTML = "Data tidak ditemukan.";
+          }
+        })
+        .catch(error => {
+          document.getElementById('konten').innerHTML = "Terjadi kesalahan koneksi.";
+        });
+    } else {
+      document.getElementById('konten').innerHTML = "ID tidak valid.";
+    }
+  </script>
+</body>
+</html>

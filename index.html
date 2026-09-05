@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Produk</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    .btn { background: #007bff; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 14px;}
+  </style>
+
+  <!-- Script OneSignal -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(function(OneSignal) {
+      OneSignal.init({
+        // NANTI GANTI TEKS DI BAWAH INI DENGAN APP ID DARI ONESIGNAL
+        appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
+        notifyButton: { enable: true },
+      });
+    });
+  </script>
+</head>
+<body>
+
+  <h2>Daftar Produk</h2>
+  <div id="konten"><i>Memuat data dari server...</i></div>
+
+  <script>
+    // URL Web App GAS Anda
+    const urlAPI = "https://script.google.com/macros/s/AKfycbw5V9MtDo_ejLyJpjVjBu4UNQTXR-bqreIt1Em4n6SEVG4X2WOnNBy7afcQFGPSeek4/exec";
+
+    fetch(urlAPI)
+      .then(response => response.json())
+      .then(data => {
+        let html = `<table><tr><th>ID</th><th>Nama Produk</th><th>Aksi</th></tr>`;
+        
+        data.forEach(item => {
+          html += `<tr>
+            <td>${item[0]}</td>
+            <td>${item[1]}</td>
+            <td><a class="btn" href="detail.html?id=${item[0]}">Lihat Detail</a></td>
+          </tr>`;
+        });
+        
+        html += `</table>`;
+        document.getElementById('konten').innerHTML = html;
+      })
+      .catch(error => {
+        document.getElementById('konten').innerHTML = "Gagal memuat data. Pastikan API GAS sudah benar.";
+      });
+  </script>
+</body>
+</html>
