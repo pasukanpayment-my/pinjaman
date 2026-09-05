@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="ms">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Katalog Produk</title>
+  <title>Semakan Akaun Peminjam</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    th { background-color: #f4f4f4; }
-    .btn { background: #007bff; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 14px;}
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 20px;}
+    input, button { padding: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+    button { background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    img.bukti { max-width: 100%; border-radius: 4px; margin-top: 10px; display: block; }
+    .btn-link { display: inline-block; background: #28a745; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin-top: 10px; font-size: 14px;}
   </style>
 
-  <!-- Script OneSignal -->
+  <!-- Script OneSignal (App ID sudah disesuaikan) -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(function(OneSignal) {
       OneSignal.init({
-        // NANTI GANTI TEKS DI BAWAH INI DENGAN APP ID DARI ONESIGNAL
         appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
         notifyButton: { enable: true },
       });
@@ -27,32 +27,84 @@
 </head>
 <body>
 
-  <h2>Daftar Produk</h2>
-  <div id="konten"><i>Memuat data dari server...</i></div>
+  <h2>Semakan Status Akaun</h2>
+  
+  <!-- Kotak carian ini akan disembunyikan jika pengguna masuk menggunakan link ID -->
+  <div class="card" id="kotakCarian">
+    <p>Sila masukkan No Akaun anda untuk menyemak butiran:</p>
+    <input type="text" id="inputNoAkun" placeholder="Contoh: 165539">
+    <button onclick="semakDataManual()">Semak Sekarang</button>
+  </div>
+
+  <div id="hasilPaparan"></div>
 
   <script>
-    // URL Web App GAS Anda
+    // URL API Apps Script yang sudah disesuaikan
     const urlAPI = "https://script.google.com/macros/s/AKfycbw5V9MtDo_ejLyJpjVjBu4UNQTXR-bqreIt1Em4n6SEVG4X2WOnNBy7afcQFGPSeek4/exec";
 
-    fetch(urlAPI)
-      .then(response => response.json())
-      .then(data => {
-        let html = `<table><tr><th>ID</th><th>Nama Produk</th><th>Aksi</th></tr>`;
-        
-        data.forEach(item => {
-          html += `<tr>
-            <td>${item[0]}</td>
-            <td>${item[1]}</td>
-            <td><a class="btn" href="detail.html?id=${item[0]}">Lihat Detail</a></td>
-          </tr>`;
+    // Mengesan link automatik semasa laman dibuka
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const idDariLink = urlParams.get('id'); 
+      
+      if (idDariLink) {
+        document.getElementById('kotakCarian').style.display = 'none';
+        prosesSemakan(idDariLink);
+      }
+    };
+
+    function semakDataManual() {
+      const noAkun = document.getElementById('inputNoAkun').value;
+      if (!noAkun) {
+        document.getElementById('hasilPaparan').innerHTML = "<p style='color:red;'>Sila masukkan No Akaun dahulu.</p>";
+        return;
+      }
+      prosesSemakan(noAkun);
+    }
+
+    function prosesSemakan(noAkun) {
+      const tempatHasil = document.getElementById('hasilPaparan');
+      tempatHasil.innerHTML = "<p>Sedang menyemak pangkalan data...</p>";
+
+      fetch(`${urlAPI}?noAkun=${noAkun}`)
+        .then(response => response.json())
+        .then(res => {
+          if (res.status === 'success') {
+            const data = res.data;
+            
+            let paparanHTML = `
+              <div class="card">
+                <h3>Butiran Peminjam</h3>
+                <p><strong>No Akaun:</strong> ${data.noAkun}</p>
+                <p><strong>Nama Peminjam:</strong> ${data.nama}</p>
+                <p><strong>Alamat Email:</strong> ${data.email}</p>
+                <p><strong>Jumlah Pinjaman Asli:</strong> RM ${data.asli}</p>
+                <p><strong>Jumlah Settle Diskaun:</strong> RM ${data.diskaun}</p>
+            `;
+
+            if (data.gambar) {
+              paparanHTML += `
+                <p><strong>Dokumen / Bukti:</strong></p>
+                <a href="${data.gambar}" target="_blank" class="btn-link">Buka Gambar Penuh</a>
+              `;
+            }
+
+            paparanHTML += `</div>`;
+            
+            if (document.getElementById('kotakCarian').style.display === 'none') {
+               paparanHTML += `<br><button onclick="window.location.href=window.location.pathname" style="background:#6c757d;">Cari Akaun Lain</button>`;
+            }
+
+            tempatHasil.innerHTML = paparanHTML;
+          } else {
+            tempatHasil.innerHTML = `<p style='color:red;'>Ralat: ${res.message}</p>
+            <br><button onclick="window.location.href=window.location.pathname" style="background:#6c757d;">Kembali</button>`;
+          }
+        })
+        .catch(error => {
+          tempatHasil.innerHTML = "<p style='color:red;'>Gagal menyambung ke sistem. Sila cuba sebentar lagi.</p>";
         });
-        
-        html += `</table>`;
-        document.getElementById('konten').innerHTML = html;
-      })
-      .catch(error => {
-        document.getElementById('konten').innerHTML = "Gagal memuat data. Pastikan API GAS sudah benar.";
-      });
+    }
   </script>
 </body>
 </html>
