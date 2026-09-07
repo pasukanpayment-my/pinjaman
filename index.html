@@ -20,9 +20,10 @@
         appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
         notifyButton: { enable: false },
         
-        // Penyesuaian path untuk GitHub Pages Sub-folder
-        serviceWorkerParam: { scope: "/pinjaman/" },
-        serviceWorkerPath: "/pinjaman/OneSignalSDKWorker.js"
+        OneSignal.init({
+        appId: "cfbf6fcb-7575-4a0e-86d6-662517972b86", 
+        notifyButton: { enable: false }
+        // Dua baris serviceWorker dihapus karena Vercel menggunakan root domain
       });
       
       // Deteksi izin (Subscribe) secara real-time untuk membuka gembok
